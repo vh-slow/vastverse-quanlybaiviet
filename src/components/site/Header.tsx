@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/src/context/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { BASE_URL } from '@/src/services';
 
-export default function Header() {
+function HeaderContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const queryFromUrl = searchParams.get('query') || '';
@@ -155,5 +155,13 @@ export default function Header() {
                 </nav>
             </header>
         </>
+    );
+}
+
+export default function Header() {
+    return (
+        <Suspense fallback={null}>
+            <HeaderContent />
+        </Suspense>
     );
 }

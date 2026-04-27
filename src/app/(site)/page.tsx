@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, Suspense } from 'react';
 import { Book, Category, Pagination } from '@/src/types';
 import { apiBook } from '@/src/services/book';
 import { apiCategory } from '@/src/services';
@@ -8,7 +8,7 @@ import BookCard from '@/src/components/site/BookCard';
 import BookCardSkeleton from '@/src/components/site/BookCardSkeleton';
 import { useSearchParams } from 'next/navigation';
 
-export default function HomePage() {
+function HomePageContent() {
     const searchParams = useSearchParams();
     const queryFromUrl = searchParams.get('query') || '';
 
@@ -237,5 +237,13 @@ export default function HomePage() {
                 </div>
             </div>
         </section>
+    );
+}
+
+export default function Header() {
+    return (
+        <Suspense fallback={null}>
+            <HomePageContent />
+        </Suspense>
     );
 }
