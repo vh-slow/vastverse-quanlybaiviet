@@ -1,19 +1,35 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Header from '@/src/components/admin/layout/Header';
 import { apiDashboard, BASE_URL } from '@/src/services';
 import Link from 'next/link';
 
+import {
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    Legend,
+    ResponsiveContainer,
+} from 'recharts';
+
 export default function AdminDashboardPage() {
     const [data, setData] = useState<any>(null);
+    const [analytics, setAnalytics] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                const result = await apiDashboard.getSummary();
-                setData(result);
+                const [summaryRes, analyticsRes] = await Promise.all([
+                    apiDashboard.getSummary(),
+                    apiDashboard.getAnalytics(),
+                ]);
+                setData(summaryRes);
+                setAnalytics(analyticsRes);
             } catch (error) {
                 console.error('Lỗi tải dashboard', error);
             } finally {
@@ -22,6 +38,20 @@ export default function AdminDashboardPage() {
         };
         fetchDashboardData();
     }, []);
+
+    const chartData = useMemo(() => {
+        if (!analytics || !analytics.viewsChart || !analytics.usersChart)
+            return [];
+
+        return analytics.viewsChart.map((viewItem: any, index: number) => {
+            const userItem = analytics.usersChart[index];
+            return {
+                date: viewItem.date,
+                views: viewItem.value,
+                users: userItem ? userItem.value : 0,
+            };
+        });
+    }, [analytics]);
 
     const breadcrumbs = [
         { name: 'Admin', href: '/admin' },
@@ -126,6 +156,123 @@ export default function AdminDashboardPage() {
                                 </Link>
                             )}
                         </div>
+                    </div>
+
+                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                <i className="fa-solid fa-chart-line text-blue-600"></i>
+                                Lưu lượng truy cập (7 ngày gần nhất)
+                            </h3>
+                        </div>
+
+                        {chartData.length > 0 ? (
+                            <div className="w-full h-[350px] md:h-[400px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart
+                                        data={chartData}
+                                        margin={{
+                                            top: 5,
+                                            right: 20,
+                                            left: -20,
+                                            bottom: 5,
+                                        }}
+                                    >
+                                        <CartesianGrid
+                                            strokeDasharray="3 3"
+                                            vertical={false}
+                                            stroke="#e5e7eb"
+                                        />
+
+                                        <XAxis
+                                            dataKey="date"
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{
+                                                fill: '#6b7280',
+                                                fontSize: 13,
+                                            }}
+                                            dy={10}
+                                        />
+
+                                        <YAxis
+                                            yAxisId="left"
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{
+                                                fill: '#6b7280',
+                                                fontSize: 13,
+                                            }}
+                                        />
+
+                                        <YAxis
+                                            yAxisId="right"
+                                            orientation="right"
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{
+                                                fill: '#6b7280',
+                                                fontSize: 13,
+                                            }}
+                                        />
+
+                                        <Tooltip
+                                            contentStyle={{
+                                                borderRadius: '12px',
+                                                border: 'none',
+                                                boxShadow:
+                                                    '0 4px 12px rgba(0,0,0,0.1)',
+                                            }}
+                                            labelStyle={{
+                                                fontWeight: 'bold',
+                                                color: '#111827',
+                                                marginBottom: '4px',
+                                            }}
+                                        />
+                                        <Legend
+                                            iconType="circle"
+                                            wrapperStyle={{
+                                                paddingTop: '15px',
+                                            }}
+                                        />
+
+                                        <Line
+                                            yAxisId="left"
+                                            type="monotone"
+                                            dataKey="views"
+                                            name="Lượt xem"
+                                            stroke="#8b5cf6"
+                                            strokeWidth={3}
+                                            dot={{
+                                                r: 4,
+                                                strokeWidth: 2,
+                                                fill: '#fff',
+                                            }}
+                                            activeDot={{ r: 7 }}
+                                        />
+
+                                        <Line
+                                            yAxisId="right"
+                                            type="monotone"
+                                            dataKey="users"
+                                            name="Người đăng ký mới"
+                                            stroke="#10b981"
+                                            strokeWidth={3}
+                                            dot={{
+                                                r: 4,
+                                                strokeWidth: 2,
+                                                fill: '#fff',
+                                            }}
+                                            activeDot={{ r: 7 }}
+                                        />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            </div>
+                        ) : (
+                            <div className="h-[350px] flex items-center justify-center text-gray-400">
+                                Chưa có dữ liệu biểu đồ
+                            </div>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

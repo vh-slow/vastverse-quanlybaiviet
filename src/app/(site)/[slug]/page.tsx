@@ -1,8 +1,9 @@
 import { Metadata, ResolvingMetadata } from 'next';
 import PostDetailClient from './PostDetailClient';
+import { BASE_URL } from '@/src/services';
 
 type Props = {
-    params: { slug: string };
+    params: Promise<{ slug: string }>;
 };
 
 export async function generateMetadata(
@@ -10,10 +11,13 @@ export async function generateMetadata(
     parent: ResolvingMetadata
 ): Promise<Metadata> {
     try {
-        const API_URL =
-            process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+        const resolvedParams = await params;
+        const slug = resolvedParams.slug;
 
-        const res = await fetch(`${API_URL}/api/books/${params.slug}`, {
+        const requestUrl = `${BASE_URL}books/${slug}`;
+        console.log('Request URL:', requestUrl);
+
+        const res = await fetch(requestUrl, {
             next: { revalidate: 60 },
         });
 
@@ -24,7 +28,7 @@ export async function generateMetadata(
         const book = await res.json();
 
         const imageUrl = book.thumbnail
-            ? `${API_URL.replace('/api', '')}${book.thumbnail}`
+            ? `${BASE_URL.replace('/api/', '')}${book.thumbnail}` 
             : 'https://placehold.co/1200x630/e0e7ff/3730a3?text=VastVerse';
 
         return {
@@ -46,6 +50,7 @@ export async function generateMetadata(
     }
 }
 
-export default function PostPage({ params }: Props) {
+export default async function PostPage({ params }: Props) {
+
     return <PostDetailClient />;
 }

@@ -6,7 +6,30 @@ import Script from 'next/script';
 
 export const metadata: Metadata = {
     title: 'VastVerse - Nền tảng chia sẻ kiến thức',
-    description: 'VastVerse, nền tảng chia sẻ kiến thức và khám phá tri thức mới.',
+    description:
+        'VastVerse, nền tảng chia sẻ kiến thức và khám phá tri thức mới.',
+    icons: {
+        icon: '/images/logo.png',
+        apple: '/images/logo.png',
+    },
+
+    openGraph: {
+        title: 'VastVerse - Nền tảng chia sẻ kiến thức',
+        description:
+            'VastVerse, nền tảng chia sẻ kiến thức và khám phá tri thức mới.',
+        url: 'https://vingochiep-2123110365.azurewebsites.net',
+        siteName: 'VastVerse',
+        images: [
+            {
+                url: 'https://vingochiep-2123110365.azurewebsites.net/images/logo.png',
+                width: 1200,
+                height: 630,
+                alt: 'VastVerse Logo',
+            },
+        ],
+        locale: 'vi_VN',
+        type: 'website',
+    },
 };
 
 export default function RootLayout({

@@ -22,6 +22,9 @@ export default function CreatePostPage() {
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
 
+    const [tags, setTags] = useState<string[]>([]);
+    const [tagInput, setTagInput] = useState('');
+
     const titleRef = useRef<HTMLTextAreaElement>(null);
 
     useEffect(() => {
@@ -56,6 +59,22 @@ export default function CreatePostPage() {
         }
     };
 
+    const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            const newTag = tagInput.trim();
+
+            if (newTag && !tags.includes(newTag)) {
+                setTags([...tags, newTag]);
+            }
+            setTagInput('');
+        }
+    };
+
+    const removeTag = (tagToRemove: string) => {
+        setTags(tags.filter((tag) => tag !== tagToRemove));
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -81,6 +100,10 @@ export default function CreatePostPage() {
             if (summary.trim()) {
                 formData.append('Summary', summary.trim());
             }
+
+            tags.forEach((tag) => {
+                formData.append('TagNames', tag);
+            });
 
             const response = await apiBook.createBook(formData);
             toast.success(response.message || 'Lưu bài viết thành công!');
@@ -147,7 +170,7 @@ export default function CreatePostPage() {
                 </div>
 
                 <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 lg:sticky h-fit">
                         <h3 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
                             <i className="fa-regular fa-image text-blue-500"></i>{' '}
                             Ảnh bìa (Thumbnail){' '}
@@ -207,6 +230,50 @@ export default function CreatePostPage() {
                                     </option>
                                 ))}
                             </select>
+                        </div>
+
+                        <div>
+                            <h3 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                <i className="fa-solid fa-hashtag text-blue-500"></i>{' '}
+                                Từ khóa (Tags)
+                            </h3>
+                            <div className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-colors">
+                                {/* Hiển thị danh sách Badge Tags */}
+                                <div className="flex flex-wrap gap-2 mb-2">
+                                    {tags.map((tag, index) => (
+                                        <span
+                                            key={index}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium"
+                                        >
+                                            {tag}
+                                            <button
+                                                type="button"
+                                                onClick={() => removeTag(tag)}
+                                                className="hover:text-red-500 focus:outline-none"
+                                            >
+                                                <i className="fa-solid fa-xmark"></i>
+                                            </button>
+                                        </span>
+                                    ))}
+                                </div>
+                                <input
+                                    type="text"
+                                    value={tagInput}
+                                    onChange={(e) =>
+                                        setTagInput(e.target.value)
+                                    }
+                                    onKeyDown={handleTagKeyDown}
+                                    placeholder={
+                                        tags.length === 0
+                                            ? 'Nhập tag và ấn Enter...'
+                                            : 'Thêm tag...'
+                                    }
+                                    className="w-full bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none px-2 py-1"
+                                />
+                            </div>
+                            <p className="text-xs text-gray-400 mt-2 italic">
+                                Gõ dấu phẩy (,) hoặc Enter để tạo tag mới.
+                            </p>
                         </div>
 
                         <div>

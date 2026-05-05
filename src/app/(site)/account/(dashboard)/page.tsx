@@ -158,7 +158,7 @@ export default function AccountDashboardPage() {
                                 key={book.id}
                                 className="group flex flex-col sm:flex-row gap-4 items-start sm:items-center p-4 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-100 transition-colors"
                             >
-                                <div className="w-full sm:w-28 h-20 rounded-lg bg-gray-100 shrink-0 overflow-hidden border border-gray-200 relative block">
+                                <div className="w-full sm:w-28 h-20 rounded-lg bg-gray-100 shrink-0 overflow-hidden border border-gray-200">
                                     <img
                                         src={
                                             book.thumbnail
@@ -215,11 +215,11 @@ export default function AccountDashboardPage() {
                                 </div>
 
                                 <div className="relative group/action shrink-0 w-full sm:w-auto flex justify-end mt-2 sm:mt-0">
-                                    <button className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-200 transition-colors relative z-10 bg-transparent group-hover:bg-white">
+                                    <button className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-200 transition-colors bg-transparent group-hover:bg-white">
                                         <i className="fa-solid fa-ellipsis-vertical"></i>
                                     </button>
 
-                                    <div className="absolute right-full top-1/2 -translate-y-1/2 pr-3 py-4 flex items-center gap-2 opacity-0 translate-x-4 pointer-events-none group-hover/action:pointer-events-auto group-hover/action:opacity-100 group-hover/action:translate-x-0 transition-all duration-300 ease-out z-0">
+                                    <div className="absolute right-full top-1/2 -translate-y-1/2 pr-3 py-4 flex items-center gap-2 opacity-0 translate-x-4 pointer-events-none group-hover/action:pointer-events-auto group-hover/action:opacity-100 group-hover/action:translate-x-0 transition-all duration-300 ease-out">
                                         <Link
                                             href={`/posts/update/${book.id}`}
                                             className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500 hover:text-blue-600 hover:border-blue-300 hover:shadow-sm transition-all"

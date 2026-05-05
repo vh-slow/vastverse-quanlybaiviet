@@ -165,7 +165,7 @@ export default function Sidebar() {
                             className="nav-link"
                         >
                             <i className="fa-brands fa-facebook fa-fw"></i>
-                            <span>@vingochiep</span>
+                            <span>@vh.slow</span>
                         </a>
                     </li>
                 </ul>

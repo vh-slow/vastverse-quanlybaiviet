@@ -1,10 +1,12 @@
 'use client';
 
-import React, { Suspense, useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/src/context/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { BASE_URL } from '@/src/services';
+import { apiNotification, BASE_URL } from '@/src/services';
+import { formatDateTime } from '@/src/utils/formatters';
+import toast from 'react-hot-toast';
 
 function HeaderContent() {
     const router = useRouter();
@@ -13,6 +15,11 @@ function HeaderContent() {
 
     const [searchQuery, setSearchQuery] = useState(queryFromUrl);
     const { user, isLoading } = useAuth();
+
+    const [notifications, setNotifications] = useState<any[]>([]);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [isNotifOpen, setIsNotifOpen] = useState(false);
+    const notifRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         setSearchQuery(queryFromUrl);
@@ -31,6 +38,85 @@ function HeaderContent() {
         }
 
         router.replace(`/?${params.toString()}`, { scroll: false });
+    };
+
+    const fetchNotifications = async () => {
+        if (!user) return;
+        try {
+            const data = await apiNotification.getNotifications();
+            setNotifications(data);
+            setUnreadCount(data.filter((n: any) => !n.isRead).length);
+        } catch (error) {
+            console.error('Lỗi lấy thông báo:', error);
+        }
+    };
+
+    useEffect(() => {
+        fetchNotifications();
+
+        const intervalId = setInterval(() => {
+            fetchNotifications();
+        }, 30000);
+
+        return () => clearInterval(intervalId);
+    }, [user]);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (
+                notifRef.current &&
+                !notifRef.current.contains(event.target as Node)
+            ) {
+                setIsNotifOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () =>
+            document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleNotificationClick = async (notif: any) => {
+        setIsNotifOpen(false);
+
+        if (!notif.isRead) {
+            setNotifications((prev) =>
+                prev.map((n) =>
+                    n.id === notif.id ? { ...n, isRead: true } : n
+                )
+            );
+            setUnreadCount((prev) => Math.max(0, prev - 1));
+
+            try {
+                await apiNotification.markAsRead(notif.id);
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        if (notif.redirectUrl) {
+            router.push(notif.redirectUrl);
+        }
+    };
+
+    const handleMarkAllAsRead = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        try {
+            await apiNotification.markAllAsRead();
+            setNotifications((prev) =>
+                prev.map((n) => ({ ...n, isRead: true }))
+            );
+            setUnreadCount(0);
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const handleUploadClick = () => {
+        if (!user) {
+            toast.error('Vui lòng đăng nhập để đăng bài viết!');
+        } else {
+            router.push('/posts/create');
+        }
     };
 
     return (
@@ -54,7 +140,7 @@ function HeaderContent() {
                     >
                         <input
                             type="text"
-                            placeholder="Tìm kiếm bài viết..."
+                            placeholder="Tìm kiếm bài viết, thẻ tag..."
                             className="search-input"
                             value={searchQuery}
                             onChange={handleInputChange}
@@ -65,17 +151,121 @@ function HeaderContent() {
                     </form>
 
                     <div className="header-actions flex items-center gap-6">
-                        {user && (
-                            <Link
-                                href="/posts/create"
-                                className="flex flex-col items-center text-gray-600 hover:text-blue-600 transition-colors mb-[-10px]"
+                        <button
+                            onClick={handleUploadClick}
+                            className="hidden sm:flex items-center gap-2 bg-blue-50 text-blue-600 hover:bg-blue-100 px-4 py-2 rounded-full font-bold text-sm transition-colors"
+                        >
+                            <i className="fa-solid fa-pen-nib"></i>
+                            <span>Viết bài</span>
+                        </button>
+
+                        <div className="relative" ref={notifRef}>
+                            <button
+                                onClick={() => setIsNotifOpen(!isNotifOpen)}
+                                className="relative w-10 h-10 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 transition-colors"
                             >
-                                <i className="fa-solid fa-cloud-arrow-up text-xl"></i>
-                                <span className="text-[10px] font-bold mt-1 uppercase">
-                                    Đăng bài
-                                </span>
-                            </Link>
-                        )}
+                                <i className="fa-regular fa-bell text-xl"></i>
+                                {user && unreadCount > 0 && (
+                                    <span className="absolute top-1 right-1.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full border-2 border-white shadow-sm">
+                                        {unreadCount > 99 ? '99+' : unreadCount}
+                                    </span>
+                                )}
+                            </button>
+
+                            {isNotifOpen && (
+                                <div className="absolute right-0 mt-2 w-[320px] sm:w-[380px] bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden animate-zoom-in origin-top-right">
+                                    <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                                        <h3 className="font-extrabold text-gray-900 text-base">
+                                            Thông báo
+                                        </h3>
+                                        {user && unreadCount > 0 && (
+                                            <button
+                                                onClick={handleMarkAllAsRead}
+                                                className="text-xs font-semibold text-blue-600 hover:underline"
+                                            >
+                                                Đánh dấu đã đọc
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+                                        {!user ? (
+                                            <div className="p-8 text-center text-gray-500">
+                                                <i className="fa-regular fa-bell-slash text-4xl mb-3 opacity-40"></i>
+                                                <p className="text-sm">
+                                                    Bạn chưa đăng nhập, vui lòng{' '}
+                                                    <Link
+                                                        href="/login"
+                                                        onClick={() =>
+                                                            setIsNotifOpen(
+                                                                false
+                                                            )
+                                                        }
+                                                        className="font-bold text-blue-600 hover:underline"
+                                                    >
+                                                        đăng nhập
+                                                    </Link>{' '}
+                                                    để xem thông báo.
+                                                </p>
+                                            </div>
+                                        ) : notifications.length === 0 ? (
+                                            <div className="p-8 text-center text-gray-500">
+                                                <i className="fa-regular fa-bell-slash text-3xl mb-2 opacity-50"></i>
+                                                <p className="text-sm">
+                                                    Bạn chưa có thông báo nào.
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <ul className="divide-y divide-gray-50">
+                                                {notifications.map((notif) => (
+                                                    <li
+                                                        key={notif.id}
+                                                        onClick={() =>
+                                                            handleNotificationClick(
+                                                                notif
+                                                            )
+                                                        }
+                                                        className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors flex gap-3 ${!notif.isRead ? 'bg-blue-100/40' : ''}`}
+                                                    >
+                                                        <div
+                                                            className={`w-2 h-2 mt-2 rounded-full shrink-0 ${!notif.isRead ? 'bg-blue-700' : 'bg-transparent'}`}
+                                                        ></div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm text-gray-800 leading-snug line-clamp-2">
+                                                                <span
+                                                                    dangerouslySetInnerHTML={{
+                                                                        __html: notif.content,
+                                                                    }}
+                                                                />
+                                                            </p>
+                                                            <p className="text-[11px] text-gray-400 mt-1 font-medium">
+                                                                {formatDateTime(
+                                                                    notif.createdAt
+                                                                )}
+                                                            </p>
+                                                        </div>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </div>
+
+                                    {user && (
+                                        <div className="p-2 border-t border-gray-100 bg-gray-50/50 text-center">
+                                            <Link
+                                                href="/account/notifications"
+                                                onClick={() =>
+                                                    setIsNotifOpen(false)
+                                                }
+                                                className="text-xs font-bold text-gray-500 hover:text-gray-900 transition-colors"
+                                            >
+                                                Xem tất cả
+                                            </Link>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                         <div className="header-action">
                             <Link href={user ? '/account' : '/login'}>
                                 <svg
@@ -122,32 +312,16 @@ function HeaderContent() {
                                     Trang chủ
                                 </Link>
                             </li>
+
                             <li>
-                                <Link href="/posts" className="nav-link">
-                                    Bài viết
+                                <Link href="/feed" className={`nav-link`}>
+                                    Bảng tin
                                 </Link>
                             </li>
+
                             <li>
                                 <Link href="/about" className="nav-link">
                                     Giới thiệu
-                                </Link>
-                            </li>
-                            <li>
-                                <Link href="/contact" className="nav-link">
-                                    Liên hệ
-                                </Link>
-                            </li>
-                        </ul>
-
-                        <ul className="nav-list">
-                            <li>
-                                <Link href="#new-posts" className="nav-link">
-                                    Mới nhất
-                                </Link>
-                            </li>
-                            <li>
-                                <Link href="#trending" className="nav-link">
-                                    Nổi bật
                                 </Link>
                             </li>
                         </ul>

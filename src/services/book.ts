@@ -128,6 +128,16 @@ export const apiBook = {
         }
     },
 
+    getFeedBooks: async (params?: any) => {
+        try {
+            const response = await axiosInstance.get('/Books/feed', { params });
+            return response.data;
+        } catch (error) {
+            console.error('Fetch feed books error:', error);
+            throw error;
+        }
+    },
+
     //================= ADMIN APIS =================
     getAdminBooks: async (params: any) => {
         try {

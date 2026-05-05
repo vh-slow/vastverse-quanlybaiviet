@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { apiBook } from '@/src/services/book';
 import { apiComment } from '@/src/services/comment';
 import { Book } from '@/src/types';
-import { apiFavorite, BASE_URL } from '@/src/services';
+import { apiFavorite, apiTag, BASE_URL } from '@/src/services';
 import { formatDate, formatDateTime } from '@/src/utils/formatters';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -20,6 +20,7 @@ export default function PostDetailClient() {
 
     const [book, setBook] = useState<Book | null>(null);
     const [relatedBooks, setRelatedBooks] = useState<Book[]>([]);
+    const [relatedTags, setRelatedTags] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isProcessingFav, setIsProcessingFav] = useState(false);
 
@@ -53,8 +54,10 @@ export default function PostDetailClient() {
                         apiBook.getRelatedBooks(bookData.id),
                         apiBook.incrementView(bookData.id),
                         fetchComments(bookData.id),
-                    ]).then(([relatedData]) => {
+                        apiTag.getRelatedTags(bookData.id),
+                    ]).then(([relatedData, _, __, relatedTagsData]) => {
                         setRelatedBooks(relatedData);
+                        setRelatedTags(relatedTagsData);
                     });
                 }
             } catch (error) {
@@ -119,7 +122,6 @@ export default function PostDetailClient() {
     };
 
     const handleDeleteComment = async (commentId: number) => {
-        if (!confirm('Bạn có chắc chắn muốn xóa bình luận này?')) return;
         try {
             await apiComment.deleteComment(commentId);
             toast.success('Đã xóa bình luận!');
@@ -235,14 +237,7 @@ export default function PostDetailClient() {
                             </div>
 
                             <header className="mb-8 border-b border-gray-100 pb-6">
-                                <Link
-                                    href={`/?categoryId=${book.category?.id}`}
-                                    className="inline-block bg-blue-50 text-blue-600 text-xs font-bold px-3 py-1.5 rounded-lg mb-4 hover:bg-blue-100 transition-colors"
-                                >
-                                    {book.category?.name || 'Chưa phân loại'}
-                                </Link>
-
-                                <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-4">
+                                <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-2">
                                     <h1 className="text-3xl lg:text-4xl font-extrabold text-gray-900 leading-tight flex-1">
                                         {book.title}
                                     </h1>
@@ -267,7 +262,7 @@ export default function PostDetailClient() {
                                     </button>
                                 </div>
 
-                                <div className="flex items-center flex-wrap gap-x-4 gap-y-2 text-sm text-gray-500">
+                                <div className="flex items-center flex-wrap gap-x-4 gap-y-2 text-sm text-gray-500 mb-4">
                                     <div className="flex items-center gap-2">
                                         <Link
                                             href={`/u/${book.user?.username}`}
@@ -309,6 +304,12 @@ export default function PostDetailClient() {
                                         </span>
                                     </div>
                                 </div>
+                                <Link
+                                    href={`/?categoryId=${book.category?.id}`}
+                                    className="inline-block bg-blue-50 text-blue-600 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
+                                >
+                                    {book.category?.name || 'Chưa phân loại'}
+                                </Link>
                             </header>
 
                             {/* Main Content */}
@@ -323,14 +324,26 @@ export default function PostDetailClient() {
                                 <div className="flex flex-wrap items-center gap-2">
                                     <span className="text-sm font-bold text-gray-700 mr-1">
                                         <i className="fa-solid fa-tags text-gray-400"></i>{' '}
-                                        Thẻ:
+                                        Từ khóa:
                                     </span>
-                                    <Link
-                                        href={`/?categoryId=${book.category?.id}`}
-                                        className="text-xs bg-gray-100 font-medium text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition-colors"
-                                    >
-                                        {book.category?.name}
-                                    </Link>
+                                    {(book as any).tags &&
+                                    (book as any).tags.length > 0 ? (
+                                        (book as any).tags.map(
+                                            (tag: string, index: number) => (
+                                                <Link
+                                                    key={index}
+                                                    href={`/?query=${encodeURIComponent('#' + tag)}`}
+                                                    className="text-xs bg-gray-100 font-medium text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition-colors"
+                                                >
+                                                    #{tag}
+                                                </Link>
+                                            )
+                                        )
+                                    ) : (
+                                        <span className="text-xs text-gray-400 italic">
+                                            Không có từ khóa
+                                        </span>
+                                    )}
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <span className="text-sm font-bold text-gray-700 mr-1">
@@ -440,7 +453,7 @@ export default function PostDetailClient() {
                                                 className="flex gap-3 sm:gap-4 border-t border-gray-50 pt-6 group"
                                             >
                                                 <Link
-                                                    href={`/author/${comment.user.id}`}
+                                                    href={`/u/${comment.user?.username}`}
                                                     className="shrink-0 hover:opacity-80 transition-opacity"
                                                 >
                                                     <img
@@ -587,6 +600,28 @@ export default function PostDetailClient() {
                         {/* Related Posts */}
                         <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
                             <h3 className="text-sm font-extrabold text-gray-900 mb-5 uppercase tracking-wider">
+                                Từ khóa liên quan
+                            </h3>
+                            <div className="flex flex-wrap gap-2">
+                                {relatedTags.length > 0 ? (
+                                    relatedTags.map((tag) => (
+                                        <Link
+                                            key={tag.id}
+                                            href={`/?query=${encodeURIComponent('#' + tag.name)}`}
+                                            className="text-xs font-bold bg-gray-50 border border-gray-200 text-gray-700 px-4 py-2 rounded-xl hover:bg-blue-50 hover:text-blue-600 hover:border-blue-100 transition-colors"
+                                        >
+                                            #{tag.name}
+                                        </Link>
+                                    ))
+                                ) : (
+                                    <p className="text-sm text-gray-400 italic">
+                                        Đang cập nhật từ khóa...
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                            <h3 className="text-sm font-extrabold text-gray-900 mb-5 uppercase tracking-wider">
                                 Có thể bạn cũng thích
                             </h3>
                             <ul className="space-y-5">
@@ -594,7 +629,7 @@ export default function PostDetailClient() {
                                     relatedBooks.map((rel) => (
                                         <li key={rel.id}>
                                             <Link
-                                                href={`/post/${rel.slug}`}
+                                                href={`/${rel.slug}`}
                                                 className="flex items-center gap-4 group"
                                             >
                                                 <img
@@ -625,33 +660,6 @@ export default function PostDetailClient() {
                                     </p>
                                 )}
                             </ul>
-                        </div>
-
-                        {/* Categories */}
-                        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-                            <h3 className="text-sm font-extrabold text-gray-900 mb-5 uppercase tracking-wider">
-                                Danh mục liên quan
-                            </h3>
-                            <div className="flex flex-wrap gap-2">
-                                <Link
-                                    href="/?categoryId=1"
-                                    className="text-xs font-bold bg-gray-50 border border-gray-200 text-gray-700 px-4 py-2 rounded-xl hover:bg-gray-100 transition-colors"
-                                >
-                                    Lập trình Web
-                                </Link>
-                                <Link
-                                    href="/?categoryId=2"
-                                    className="text-xs font-bold bg-gray-50 border border-gray-200 text-gray-700 px-4 py-2 rounded-xl hover:bg-gray-100 transition-colors"
-                                >
-                                    Technology
-                                </Link>
-                                <Link
-                                    href="/?categoryId=3"
-                                    className="text-xs font-bold bg-gray-50 border border-gray-200 text-gray-700 px-4 py-2 rounded-xl hover:bg-gray-100 transition-colors"
-                                >
-                                    Guides
-                                </Link>
-                            </div>
                         </div>
                     </aside>
                 </div>

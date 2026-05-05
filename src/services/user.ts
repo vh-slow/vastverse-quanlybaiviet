@@ -66,6 +66,52 @@ export const apiUser = {
         }
     },
 
+    unfollowUser: async (id: number) => {
+        try {
+            const response = await axiosInstance.delete(
+                `/users/unfollow/${id}`
+            );
+            return response.data;
+        } catch (error) {
+            console.error('Unfollow user error:', error);
+            throw error;
+        }
+    },
+
+    followUser: async (id: number) => {
+        try {
+            const response = await axiosInstance.post(`/users/follow/${id}`);
+            return response.data;
+        } catch (error) {
+            console.error('Follow user error:', error);
+            throw error;
+        }
+    },
+
+    getFollowers: async (username: string) => {
+        try {
+            const response = await axiosInstance.get(
+                `/users/${username}/followers`
+            );
+            return response.data;
+        } catch (error) {
+            console.error('Fetch followers error:', error);
+            throw error;
+        }
+    },
+
+    getFollowing: async (username: string) => {
+        try {
+            const response = await axiosInstance.get(
+                `/users/${username}/following`
+            );
+            return response.data;
+        } catch (error) {
+            console.error('Fetch following error:', error);
+            throw error;
+        }
+    },
+
     //================= ADMIN APIS =================
     getAdminUsers: async (params: any) => {
         try {

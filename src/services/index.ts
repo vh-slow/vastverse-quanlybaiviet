@@ -6,3 +6,5 @@ export * from './dashboard';
 export * from './book';
 export * from './comment';
 export * from './favorite';
+export * from './tag';
+export * from './notification';

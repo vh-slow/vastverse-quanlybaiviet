@@ -4,16 +4,19 @@ import React, { useEffect, useState, useCallback, Suspense } from 'react';
 import { Book, Category, Pagination } from '@/src/types';
 import { apiBook } from '@/src/services/book';
 import { apiCategory } from '@/src/services';
+import { apiTag } from '@/src/services';
 import BookCard from '@/src/components/site/BookCard';
 import BookCardSkeleton from '@/src/components/site/BookCardSkeleton';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 function HomePageContent() {
     const searchParams = useSearchParams();
+    const router = useRouter();
     const queryFromUrl = searchParams.get('query') || '';
 
     const [books, setBooks] = useState<Book[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
+    const [trendingTags, setTrendingTags] = useState<any[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
 
     const [currentPage, setCurrentPage] = useState<number>(0);
@@ -33,16 +36,19 @@ function HomePageContent() {
     }, [queryFromUrl]);
 
     useEffect(() => {
-        const fetchCategories = async () => {
+        const fetchSidebarData = async () => {
             try {
-                const data = await apiCategory.getAllCategories();
-                console.log('Fetched categories: ', data);
-                setCategories(data.data || data.content || data);
+                const [catData, tagData] = await Promise.all([
+                    apiCategory.getAllCategories(),
+                    apiTag.getTrendingTags(10),
+                ]);
+                setCategories(catData.data || catData.content || catData);
+                setTrendingTags(tagData);
             } catch (error) {
-                console.error('Failed to fetch categories:', error);
+                console.error('Failed to fetch sidebar data:', error);
             }
         };
-        fetchCategories();
+        fetchSidebarData();
     }, []);
 
     useEffect(() => {
@@ -64,7 +70,6 @@ function HomePageContent() {
             if (selectedCategoryId) params.categoryId = selectedCategoryId;
 
             const response = await apiBook.getPublicBooks(params);
-            console.log('Fetched books: ', response.data);
             setBooks(response.data);
             setPaginationInfo(response);
         } catch (error) {
@@ -82,11 +87,36 @@ function HomePageContent() {
         fetchBooks();
     }, [fetchBooks]);
 
+    const handleTagClick = (tagName: string) => {
+        const queryString = encodeURIComponent(`#${tagName}`);
+        router.push(`/?query=${queryString}`);
+    };
+
     return (
-        <section className="py-12 lg:py-16 bg-gray-50 min-h-screen bg-white">
+        <section className="py-12 lg:py-16 min-h-screen bg-white">
             <div className="container mx-auto px-4">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                     <div className="lg:col-span-8 space-y-6">
+                        {searchQuery && (
+                            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+                                <p className="text-gray-600 font-medium">
+                                    Kết quả tìm kiếm cho:{' '}
+                                    <span className="text-blue-600">
+                                        "{searchQuery}"
+                                    </span>
+                                </p>
+                                <button
+                                    onClick={() => {
+                                        setSearchQuery('');
+                                        router.push('/');
+                                    }}
+                                    className="text-sm text-red-500 hover:underline"
+                                >
+                                    Xóa tìm kiếm
+                                </button>
+                            </div>
+                        )}
+
                         {loading ? (
                             <>
                                 <BookCardSkeleton />
@@ -106,6 +136,7 @@ function HomePageContent() {
                             </div>
                         )}
 
+                        {/* PHÂN TRANG */}
                         {paginationInfo && paginationInfo.totalPages > 1 && (
                             <nav className="mt-12 flex justify-center">
                                 <ul className="inline-flex items-center gap-2">
@@ -165,27 +196,34 @@ function HomePageContent() {
 
                     <aside className="lg:col-span-4 lg:sticky lg:top-24 space-y-6">
                         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                                Tìm kiếm bài viết
+                            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                <i className="fa-solid fa-fire text-red-500"></i>{' '}
+                                Từ khóa nổi bật
                             </h3>
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    placeholder="Nhập từ khóa..."
-                                    value={searchQuery}
-                                    onChange={(e) =>
-                                        setSearchQuery(e.target.value)
-                                    }
-                                    className="w-full pl-4 pr-10 py-2.5 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
-                                />
-                                <button className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-blue-600">
-                                    <i className="fa-solid fa-magnifying-glass"></i>
-                                </button>
+                            <div className="flex flex-wrap gap-2">
+                                {trendingTags.length > 0 ? (
+                                    trendingTags.map((tag) => (
+                                        <button
+                                            key={tag.id}
+                                            onClick={() =>
+                                                handleTagClick(tag.name)
+                                            }
+                                            className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-blue-100 hover:text-blue-700 transition-colors"
+                                        >
+                                            #{tag.name}
+                                        </button>
+                                    ))
+                                ) : (
+                                    <p className="text-sm text-gray-400">
+                                        Đang cập nhật từ khóa...
+                                    </p>
+                                )}
                             </div>
                         </div>
 
                         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                <i className="fa-solid fa-layer-group text-blue-500"></i>{' '}
                                 Chủ đề
                             </h3>
                             <ul className="space-y-3 text-sm">

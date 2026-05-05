@@ -167,7 +167,7 @@ export default function LoginPage() {
                                 <button
                                     type="submit"
                                     disabled={isLoading}
-                                    className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex justify-center items-center gap-2 disabled:opacity-70"
+                                    className="w-full py-3 text-white rounded-lg font-medium btn-primary transition-colors flex justify-center items-center gap-2 disabled:opacity-70"
                                 >
                                     {isLoading && (
                                         <i className="fa-solid fa-circle-notch fa-spin"></i>

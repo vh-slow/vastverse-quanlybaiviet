@@ -10,4 +10,14 @@ export const apiDashboard = {
             throw error;
         }
     },
+
+    getAnalytics: async () => {
+        try {
+            const response = await axiosInstance.get('/dashboard/analytics');
+            return response.data;
+        } catch (error) {
+            console.error('Fetch dashboard analytics error:', error);
+            throw error;
+        }
+    },
 };

@@ -16,7 +16,6 @@ export default function RegisterPage() {
     const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
 
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -40,11 +39,6 @@ export default function RegisterPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        if (password !== confirmPassword) {
-            toast.error('Mật khẩu xác nhận không khớp!');
-            return;
-        }
 
         setIsLoading(true);
         isSubmittingRef.current = true;
@@ -120,7 +114,6 @@ export default function RegisterPage() {
                                     }
                                 />
                             </div>
-
                             {/* Email Input */}
                             <div>
                                 <label
@@ -140,7 +133,6 @@ export default function RegisterPage() {
                                     onChange={(e) => setEmail(e.target.value)}
                                 />
                             </div>
-
                             {/* Username Input */}
                             <div>
                                 <label
@@ -162,7 +154,6 @@ export default function RegisterPage() {
                                     }
                                 />
                             </div>
-
                             {/* Password Input */}
                             <div>
                                 <label
@@ -199,34 +190,12 @@ export default function RegisterPage() {
                                     </button>
                                 </div>
                             </div>
-
-                            {/* Confirm Password Input */}
-                            <div>
-                                <label
-                                    htmlFor="confirmPassword"
-                                    className="block text-sm font-medium text-gray-700 mb-1.5"
-                                >
-                                    Xác nhận Mật khẩu{' '}
-                                    <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type={showPassword ? 'text' : 'password'}
-                                    id="confirmPassword"
-                                    className="w-full px-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                                    required
-                                    placeholder="Nhập lại mật khẩu..."
-                                    value={confirmPassword}
-                                    onChange={(e) =>
-                                        setConfirmPassword(e.target.value)
-                                    }
-                                />
-                            </div>
-
+                            
                             <div className="pt-2">
                                 <button
                                     type="submit"
                                     disabled={isLoading}
-                                    className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex justify-center items-center gap-2 disabled:opacity-70"
+                                    className="w-full py-3 btn-primary text-white rounded-lg font-medium transition-colors flex justify-center items-center gap-2 disabled:opacity-70"
                                 >
                                     {isLoading && (
                                         <i className="fa-solid fa-circle-notch fa-spin"></i>
